@@ -70,6 +70,17 @@ os.environ["SERPER_API_KEY"] = "Your Key" # serper.dev API key
 # os.environ["OPENAI_MODEL_NAME"] ='openhermes'  # Adjust based on available model
 # os.environ["OPENAI_API_KEY"] ='sk-111111111111111111111111111111111111111111111111'
 
+# You can pass an optional llm attribute specifying what model you wanna use.
+# It can be a local model through Ollama / LM Studio or a remote
+# model like OpenAI, Mistral, Antrophic or others (https://docs.crewai.com/how-to/LLM-Connections/)
+#
+# import os
+# os.environ['OPENAI_MODEL_NAME'] = 'gpt-3.5-turbo'
+#
+# OR
+#
+# from langchain_openai import ChatOpenAI
+
 search_tool = SerperDevTool()
 
 # Define your agents with roles and goals
@@ -81,18 +92,9 @@ researcher = Agent(
   You have a knack for dissecting complex data and presenting actionable insights.""",
   verbose=True,
   allow_delegation=False,
-  tools=[search_tool]
   # You can pass an optional llm attribute specifying what model you wanna use.
-  # It can be a local model through Ollama / LM Studio or a remote
-  # model like OpenAI, Mistral, Antrophic or others (https://docs.crewai.com/how-to/LLM-Connections/)
-  #
-  # import os
-  # os.environ['OPENAI_MODEL_NAME'] = 'gpt-3.5-turbo'
-  #
-  # OR
-  #
-  # from langchain_openai import ChatOpenAI
-  # llm=ChatOpenAI(model_name="gpt-3.5", temperature=0.7)
+  # llm=ChatOpenAI(model_name="gpt-3.5", temperature=0.7),
+  tools=[search_tool]
 )
 writer = Agent(
   role='Tech Content Strategist',
@@ -125,6 +127,7 @@ crew = Crew(
   agents=[researcher, writer],
   tasks=[task1, task2],
   verbose=2, # You can set it to 1 or 2 to different logging levels
+  process = Process.sequential
 )
 
 # Get your crew to work!
@@ -192,6 +195,47 @@ Please refer to the [Connect crewAI to LLMs](https://docs.crewai.com/how-to/LLM-
 - **ChatDev**: ChatDev introduced the idea of processes into the realm of AI agents, but its implementation is quite rigid. Customizations in ChatDev are limited and not geared towards production environments, which can hinder scalability and flexibility in real-world applications.
 
 **CrewAI's Advantage**: CrewAI is built with production in mind. It offers the flexibility of Autogen's conversational agents and the structured process approach of ChatDev, but without the rigidity. CrewAI's processes are designed to be dynamic and adaptable, fitting seamlessly into both development and production workflows.
+
+
+## Training
+
+The training feature in CrewAI allows you to train your AI agents using the command-line interface (CLI). By running the command `crewai train -n <n_iterations>`, you can specify the number of iterations for the training process.
+
+During training, CrewAI utilizes techniques to optimize the performance of your agents along with human feedback. This helps the agents improve their understanding, decision-making, and problem-solving abilities.
+
+To use the training feature, follow these steps:
+
+1. Open your terminal or command prompt.
+2. Navigate to the directory where your CrewAI project is located.
+3. Run the following command:
+
+```shell
+crewai train -n <n_iterations>
+```
+
+Replace `<n_iterations>` with the desired number of training iterations. This determines how many times the agents will go through the training process.
+
+Remember to also replace the placeholder inputs with the actual values you want to use on the main.py file in the `train` function.
+
+```python
+def train():
+    """
+    Train the crew for a given number of iterations.
+    """
+    inputs = {"topic": "AI LLMs"}
+    try:
+        ProjectCreationCrew().crew().train(n_iterations=int(sys.argv[1]), inputs=inputs)
+    ...
+```
+
+It is important to note that the training process may take some time, depending on the complexity of your agents and will also require your feedback on each iteration.
+
+Once the training is complete, your agents will be equipped with enhanced capabilities and knowledge, ready to tackle complex tasks and provide more consistent and valuable insights.
+
+Remember to regularly update and retrain your agents to ensure they stay up-to-date with the latest information and advancements in the field.
+
+Happy training with CrewAI!
+
 
 ## Contribution
 
