@@ -35,12 +35,12 @@ from pydantic_core import PydanticCustomError
 
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.security import Fingerprint, SecurityConfig
-from crewai.tasks.guardrail_result import GuardrailResult
 from crewai.tasks.output_format import OutputFormat
 from crewai.tasks.task_output import TaskOutput
 from crewai.tools.base_tool import BaseTool
 from crewai.utilities.config import process_config
-from crewai.utilities.constants import NOT_SPECIFIED
+from crewai.utilities.constants import NOT_SPECIFIED, _NotSpecified
+from crewai.utilities.guardrail import process_guardrail, GuardrailResult
 from crewai.utilities.converter import Converter, convert_to_model
 from crewai.utilities.events import (
     TaskCompletedEvent,
@@ -95,9 +95,9 @@ class Task(BaseModel):
     agent: Optional[BaseAgent] = Field(
         description="Agent responsible for execution the task.", default=None
     )
-    context: Optional[List["Task"]] = Field(
+    context: Union[List["Task"], None, _NotSpecified] = Field(
         description="Other tasks that will have their output used as context for this task.",
-        default=NOT_SPECIFIED,
+        default=NOT_SPECIFIED
     )
     async_execution: Optional[bool] = Field(
         description="Whether the task should be executed asynchronously or not.",
@@ -158,6 +158,9 @@ class Task(BaseModel):
     end_time: Optional[datetime.datetime] = Field(
         default=None, description="End time of the task execution"
     )
+    model_config = {
+        "arbitrary_types_allowed": True
+    }
 
     @field_validator("guardrail")
     @classmethod
@@ -431,7 +434,11 @@ class Task(BaseModel):
             )
 
             if self._guardrail:
-                guardrail_result = self._process_guardrail(task_output)
+                guardrail_result = process_guardrail(
+                    output=task_output,
+                    guardrail=self._guardrail,
+                    retry_count=self.retry_count
+                )
                 if not guardrail_result.success:
                     if self.retry_count >= self.max_retries:
                         raise Exception(
@@ -527,10 +534,10 @@ class Task(BaseModel):
 
     def prompt(self) -> str:
         """Generates the task prompt with optional markdown formatting.
-        
+
         When the markdown attribute is True, instructions for formatting the
         response in Markdown syntax will be added to the prompt.
-        
+
         Returns:
             str: The formatted prompt string containing the task description,
                  expected output, and optional markdown formatting instructions.
@@ -541,7 +548,7 @@ class Task(BaseModel):
             expected_output=self.expected_output
         )
         tasks_slices = [self.description, output]
-        
+
         if self.markdown:
             markdown_instruction = """Your final answer MUST be formatted in Markdown syntax.
 Follow these guidelines:
